@@ -1,0 +1,633 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa druhého mozku</title>
+<meta name="description" content="Interaktivní mapa druhého mozku Kateřiny Švidrnochové: jak tečou data od schůzek a pošty přes AI agenta k hotovým výstupům – a co agent nikdy nesmí.">
+<meta property="og:title" content="Mapa druhého mozku">
+<meta property="og:description" content="Jak funguje znalostní systém s AI agentem: vstupy, pravidla, jeden zdroj pravdy, smyčky zlepšování a výstupy pro klienty.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;900&family=Fragment+Mono&display=swap">
+<style>
+  :root{
+    --ink:#1C2740; --dblue:#2D4173; --lblue:#62C4DD; --yellow:#FFCC00; --red:#E85252;
+    --cream:#FBF7EE; --paper:#FFFFFF; --muted:#7A8699; --body:#4A5668;
+    --hair:#E9E6DE; --lblue-soft:#EFF8FB; --yellow-soft:#FFF6D6; --red-soft:#FDECEC;
+    --mono:'Fragment Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{font-family:'Rubik',system-ui,-apple-system,sans-serif;background:var(--paper);color:var(--body);line-height:1.6}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  .mono{font-family:var(--mono)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:56px 0 8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--yellow)}
+  h1{font-size:clamp(34px,5.4vw,58px);font-weight:900;color:var(--ink);line-height:1.05;letter-spacing:-.01em;text-wrap:balance;max-width:18ch}
+  .lede{margin-top:20px;font-size:17.5px;max-width:60ch;color:var(--body)}
+  .lede strong{color:var(--ink);font-weight:600}
+
+  /* benefit cards = PROČ */
+  .why{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:30px 0 10px}
+  .why .b{border:1px solid var(--hair);border-radius:12px;padding:18px 20px;position:relative;background:var(--paper)}
+  .why .b::before{content:"";position:absolute;top:18px;right:18px;width:14px;height:14px;border-radius:50%}
+  .why .b:nth-child(1)::before{background:var(--yellow)}
+  .why .b:nth-child(2)::before{background:var(--lblue)}
+  .why .b:nth-child(3)::before{border:3px solid var(--red);background:transparent}
+  .why h3{font-size:16.5px;font-weight:700;color:var(--ink);margin-bottom:6px;padding-right:30px}
+  .why p{font-size:14px}
+  .why-note{font-family:var(--mono);font-size:11px;color:var(--muted);margin:10px 0 0}
+
+  /* polopatě bar */
+  .plainbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;border:1px solid var(--hair);background:var(--cream);border-radius:999px;padding:10px 18px;margin:26px 0 0;font-size:14px;color:var(--body)}
+  .plainbar .demo{color:var(--ink)}
+  .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;border:none;background:var(--paper);border:1px solid var(--hair);border-radius:999px;padding:7px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--dblue)}
+  .switch .knob{width:30px;height:17px;border-radius:999px;background:#D8D3C6;position:relative;transition:background .15s;flex:none}
+  .switch .knob::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .15s}
+  body.plain .switch .knob{background:var(--lblue)}
+  body.plain .switch .knob::after{transform:translateX(13px)}
+  .switch:focus-visible{outline:3px solid var(--lblue);outline-offset:2px}
+
+  /* ---------- terms (slovníček inline) ---------- */
+  .term{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;
+    border-bottom:2px dotted var(--lblue);font-weight:inherit}
+  .term:hover{background:var(--lblue-soft)}
+  .term:focus-visible{outline:3px solid var(--lblue);outline-offset:2px}
+  body.plain .term::after{content:" (" attr(data-plain) ")";color:var(--dblue);font-weight:500;border-bottom:none;font-size:.92em}
+  #pop{position:absolute;z-index:50;max-width:290px;background:var(--ink);color:#fff;border-radius:10px;padding:12px 15px;font-size:13.5px;line-height:1.5;box-shadow:0 10px 30px rgba(28,39,64,.25);display:none}
+  #pop b{color:var(--yellow);display:block;margin-bottom:3px;font-size:13px}
+  #pop::before{content:"";position:absolute;top:-6px;left:24px;width:12px;height:12px;background:var(--ink);transform:rotate(45deg)}
+
+  /* ---------- tools (kdo hraje roli) ---------- */
+  .tools{margin-top:42px}
+  .tools-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:14px}
+  .tools h2{font-size:20px;font-weight:700;color:var(--ink)}
+  .tools-head span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+  .tool{border:1px solid var(--hair);border-radius:10px;padding:12px 14px;background:var(--cream)}
+  .tool .t-name{font-family:var(--mono);font-size:11px;color:var(--dblue);display:block;margin-bottom:4px;letter-spacing:.04em}
+  .tool p{font-size:13px;line-height:1.5}
+  .mm-note{padding:8px 24px 2px;font-size:12.5px;color:var(--body)}
+  .mm-note b{color:var(--ink)}
+
+  /* ---------- minimap ---------- */
+  .minimap{margin:44px 0 0;border:1px solid var(--hair);border-radius:16px;background:var(--paper);overflow:hidden}
+  .minimap .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;padding:20px 24px 4px}
+  .minimap h2{font-size:20px;font-weight:700;color:var(--ink)}
+  .minimap .head span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .mm-scroll{overflow-x:auto;padding:6px 10px 14px}
+  .mm-scroll svg{display:block;min-width:760px;width:100%;height:auto}
+  .mm-node{cursor:pointer}
+  .mm-node:hover .mm-ring{stroke-width:3.5}
+  .mm-node:focus-visible{outline:3px solid var(--lblue)}
+  .mm-legend{display:flex;flex-wrap:wrap;gap:16px;padding:0 24px 18px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .mm-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+
+  /* ---------- zones ---------- */
+  main{padding:26px 0 0}
+  .zone{position:relative;padding:34px 0 8px}
+  .zone-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .zn{font-family:var(--mono);font-size:11px;color:var(--dblue);border:1px solid var(--dblue);border-radius:999px;padding:4px 11px;letter-spacing:.14em;flex:none}
+  .zone h2{font-size:23px;font-weight:700;color:var(--ink)}
+  .zone .sub{font-size:14.5px;color:var(--muted);margin:8px 0 20px;max-width:72ch}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+  .card{background:var(--paper);border:1px solid var(--hair);border-radius:12px;padding:15px 17px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;text-align:left;font:inherit;color:inherit;width:100%}
+  .card:hover{border-color:var(--lblue);box-shadow:0 4px 16px rgba(45,65,115,.07)}
+  .card:focus-visible{outline:3px solid var(--lblue);outline-offset:2px}
+  .card h3{font-size:15px;font-weight:700;color:var(--ink);padding-right:22px}
+  .card .file{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-bottom:6px}
+  .badge{font-family:var(--mono);font-size:10px;border:1px solid var(--hair);border-radius:999px;padding:2px 9px;color:var(--muted);margin-left:0;display:inline-block;margin-bottom:8px}
+  .badge.auto{color:#1E8FB0;border-color:rgba(98,196,221,.55)}
+  .badge.lock{color:var(--red);border-color:rgba(232,82,82,.4)}
+  .badge.gold{color:#8A7413;border-color:rgba(255,204,0,.6)}
+  .card .short{font-size:13.5px;margin-top:4px}
+  .card .more{display:none;font-size:13.5px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--hair)}
+  .card.open .more{display:block}
+  .card .hint{position:absolute;top:13px;right:14px;font-size:16px;color:var(--muted);font-weight:400;transition:transform .15s}
+  .card.open .hint{transform:rotate(45deg)}
+  code{font-family:var(--mono);font-size:12px;background:var(--cream);padding:1px 5px;border-radius:4px;color:var(--dblue)}
+
+  /* connector between zones */
+  .conn{display:flex;align-items:center;gap:10px;margin:22px 0 0;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .conn::before{content:"";width:2px;height:34px;background:linear-gradient(var(--hair),var(--dblue));margin-left:24px;border-radius:2px}
+
+  /* core + loops panels */
+  .panel{border:1.5px solid var(--dblue);border-radius:16px;padding:20px}
+  .panel .cards .card{background:var(--cream);border-color:#EFE9DA}
+  .core-side{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:12px}
+  .side-card{background:var(--dblue);color:#E7ECF6;border-radius:12px;padding:14px 17px;font-size:13.5px;line-height:1.55}
+  .side-card b{display:block;font-size:14px;font-weight:700;color:var(--lblue);margin-bottom:4px}
+  .side-card .term{border-bottom-color:rgba(255,255,255,.5);color:#fff}
+  body.plain .side-card .term::after{color:var(--yellow)}
+  .loop-panel{border:1.5px solid #EFD98A;background:var(--yellow-soft);border-radius:16px;padding:20px}
+  .loop-panel .cards .card{background:var(--paper);border-color:#EFE3B8}
+  .loop-note{font-family:var(--mono);font-size:11.5px;color:#8A7413;margin-top:14px}
+
+  /* gate */
+  .gate{margin:30px 0 0;border:2px dashed var(--red);border-radius:14px;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;background:var(--paper)}
+  .gate .ico{width:34px;height:34px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex:none}
+  .gate b{color:var(--red)}
+  .gate p{font-size:14px}
+
+  /* red lines */
+  .redlines{background:var(--ink);color:#fff;margin-top:52px;padding:46px 0}
+  .redlines h2{font-size:22px;font-weight:700}
+  .redlines .sub{color:#AEB9D4;font-size:14.5px;margin:8px 0 22px;max-width:72ch}
+  .rl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px}
+  .rl{background:rgba(255,255,255,.05);border-left:3px solid var(--red);border-radius:8px;padding:13px 16px;font-size:13.5px;color:#CBD4E6;line-height:1.5}
+  .rl b{display:block;color:#fff;font-size:14px;margin-bottom:3px}
+
+  /* glossary */
+  .gloss{padding:46px 0 8px}
+  .gloss h2{font-size:22px;font-weight:700;color:var(--ink)}
+  .gloss .sub{font-size:14.5px;color:var(--muted);margin:8px 0 20px;max-width:72ch}
+  .gl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px 26px}
+  .gl{border-top:1px solid var(--hair);padding:10px 2px;font-size:13.5px}
+  .gl dt{font-weight:700;color:var(--ink);font-size:14px}
+  .gl dt .mono{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
+  .gl dd{margin-top:2px}
+
+  footer{padding:34px 0 46px;border-top:1px solid var(--hair);margin-top:40px}
+  footer .facts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  footer .fact{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--hair);border-radius:999px;padding:4px 12px}
+  footer .claim{font-weight:600;color:var(--ink);font-size:15px}
+  footer .sig{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px}
+
+  #plainFab{position:fixed;right:18px;bottom:18px;z-index:40;box-shadow:0 8px 24px rgba(28,39,64,.22);background:var(--paper)}
+  #plainFab.hidden{display:none}
+  @media (max-width:640px){
+    #plainFab{right:12px;bottom:12px}
+    .hero{padding-top:40px}
+    .plainbar{border-radius:16px}
+  }
+  @media (prefers-reduced-motion:reduce){.card,.card .hint,.switch .knob,.switch .knob::after{transition:none}}
+</style>
+
+<body>
+
+<!-- ============ HERO: PROČ ============ -->
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Druhý mozek · Kateřina Švidrnochová × Claude</p>
+    <h1>Systém, který za mě pamatuje a&nbsp;dotahuje</h1>
+    <p class="lede">Každá schůzka má do 24 hodin hotový zápis. Žádný slib se neztratí. Odpovědi na e-maily čekají nachystané, stačí je odeslat. <strong>A moje hlava se přestala starat o evidenci a vrátila se k přemýšlení.</strong> Tohle je mapa systému, který to obstarává. Jedu po ní odshora dolů: nejdřív k čemu to je, pak kdo v tom hraje jakou roli, potom kudy tečou data a nakonec detail každé části. Nemusíte předem znát jediný nástroj.</p>
+
+    <div class="why">
+      <div class="b"><h3>Nic nezapadne</h3><p>Úkoly, sliby a rozdělané nitky mají jedno místo a hlídače, který je připomíná. Kredibilita u klientů stojí právě tady.</p></div>
+      <div class="b"><h3>Výstupy do 24 hodin</h3><p>Ze schůzky vznikne zápis pro klienta do druhého dne. Dřív to trvalo týden a stálo mě to důvěru.</p></div>
+      <div class="b"><h3>Rozhoduju jen já</h3><p>Systém připravuje, člověk schvaluje. Nic neodejde ven bez mého souhlasu, nic se nikdy nemaže.</p></div>
+    </div>
+    <p class="why-note">// řazení PROČ → JAK → CO není náhoda: Zlatý kruh funguje i u map</p>
+
+    <div class="plainbar">
+      <span class="demo">Slovníček po ruce: cizí slova jsou <button class="term" data-plain="tečkovaně podtržená" data-def="Přesně takhle. Klepněte a objeví se vysvětlení bez hantýrky.">takhle podtržená</button> — klepněte na ně.</span>
+      <button class="switch" id="plainSwitch" aria-pressed="false"><span class="knob" aria-hidden="true"></span>Režim Polopatě: přeložit všechno najednou</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ NÁSTROJE: KDO HRAJE ROLI ============ -->
+<section class="wrap tools" id="nastroje">
+  <div class="tools-head"><h2>Kdo v tom hraje jakou roli</h2><span>// šest jmen, která v mapě potkáte</span></div>
+  <div class="tool-grid">
+    <div class="tool"><span class="t-name">složka na počítači („vault")</span><p>Tady leží úplně všechno: obyčejné textové soubory. Základ, který přežije výměnu jakéhokoliv nástroje.</p></div>
+    <div class="tool"><span class="t-name">Claude Code</span><p>AI agent, který se o složku stará: čte, třídí, píše a hlídá termíny. Úkoluju ho psaním, česky.</p></div>
+    <div class="tool"><span class="t-name">Obsidian</span><p>Jen brýle. Složku hezky zobrazí a prolinkuje, ale data v něm neleží a nic neřídí. Kdyby zmizel, nic se neztratí.</p></div>
+    <div class="tool"><span class="t-name">Plaud</span><p>Chytrý diktafon: nahraje schůzku a udělá z ní text k dalšímu zpracování.</p></div>
+    <div class="tool"><span class="t-name">Git + GitHub</span><p>Paměť změn a soukromá záloha. Každá úprava se ukládá a jde kdykoliv vrátit.</p></div>
+    <div class="tool"><span class="t-name">Google účet</span><p>Pošta, kalendář, dokumenty. Agent do nich vidí jen v přesně vymezených výsecích.</p></div>
+  </div>
+</section>
+
+<!-- ============ MINIMAPA: JAK ============ -->
+<section class="wrap">
+  <div class="minimap" id="minimapa">
+    <div class="head"><h2>Celý tok na jednu obrazovku</h2><span>// klepnutím na uzel sjedete na detail</span></div>
+    <div class="mm-scroll">
+      <svg viewBox="0 0 960 446" role="img" aria-label="Přehledová mapa: vstupy tečou k agentovi, který uvnitř rámu mantinelů plní vault se znalostmi; ven jdou výstupy jen přes schvalovací bránu člověka.">
+        <!-- rám mantinelů -->
+        <rect x="268" y="70" width="478" height="290" rx="16" fill="none" stroke="#E85252" stroke-width="2" stroke-dasharray="7 6"/>
+        <rect x="270" y="72" width="474" height="24" rx="12" fill="#FDECEC"/>
+        <text x="507" y="88" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="10" fill="#C63B3B">MANTINELY: nikdy neposílá maily · nemaže · nevymýšlí si · nemění pravidla</text>
+
+        <!-- toky vstupů -->
+        <g stroke="#62C4DD" stroke-width="2" fill="none" opacity=".85">
+          <path d="M150 95 C 220 95 240 185 300 207"/>
+          <path d="M150 155 C 215 155 240 200 300 215"/>
+          <path d="M150 215 C 220 215 240 222 300 223"/>
+          <path d="M150 275 C 215 275 240 245 300 233"/>
+          <path d="M150 335 C 220 335 245 260 300 241"/>
+        </g>
+
+        <!-- hlavní tok -->
+        <path d="M420 225 L 460 225" stroke="#2D4173" stroke-width="3"/>
+        <path d="M656 225 L 714 225" stroke="#2D4173" stroke-width="3"/>
+        <path d="M765 225 L 798 225" stroke="#2D4173" stroke-width="3"/>
+        <g stroke="#2D4173" stroke-width="3" fill="#2D4173">
+          <path d="M456 219 l10 6 -10 6 z"/><path d="M710 219 l10 6 -10 6 z"/><path d="M793 219 l10 6 -10 6 z"/>
+        </g>
+        <path d="M840 105 L 840 345" stroke="#2D4173" stroke-width="2"/>
+
+        <!-- smyčka zlepšování -->
+        <path d="M562 303 C 562 368 390 368 352 292" stroke="#E3B71A" stroke-width="2.5" stroke-dasharray="6 6" fill="none"/>
+        <path d="M346 302 l3 -13 11 8 z" fill="#E3B71A"/>
+        <text x="457" y="380" font-family="Fragment Mono,monospace" font-size="10" fill="#8A7413" text-anchor="middle">smyčky zlepšování ↻</text>
+
+        <!-- vstupy -->
+        <a class="mm-node" href="#zona-1"><g>
+          <g font-family="Rubik,sans-serif" font-size="13" fill="#1C2740">
+            <circle class="mm-ring" cx="120" cy="95"  r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="155" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="215" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="275" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="335" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <text x="120" y="100" text-anchor="middle" font-size="14">🎙</text>
+            <text x="120" y="160" text-anchor="middle" font-size="14">✉️</text>
+            <text x="120" y="220" text-anchor="middle" font-size="14">📅</text>
+            <text x="120" y="280" text-anchor="middle" font-size="14">📥</text>
+            <text x="120" y="340" text-anchor="middle" font-size="14">📁</text>
+            <text x="78" y="99"  text-anchor="end">schůzky</text>
+            <text x="78" y="159" text-anchor="end">pošta</text>
+            <text x="78" y="219" text-anchor="end">kalendář</text>
+            <text x="78" y="279" text-anchor="end">inbox</text>
+            <text x="78" y="339" text-anchor="end">dokumenty</text>
+          </g>
+          <text x="120" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">1 · VSTUPY</text>
+        </g></a>
+
+        <!-- agent -->
+        <a class="mm-node" href="#zona-2"><g>
+          <circle class="mm-ring" cx="352" cy="225" r="52" fill="#FFFFFF" stroke="#2D4173" stroke-width="3"/>
+          <circle cx="352" cy="225" r="64" fill="none" stroke="#FFCC00" stroke-width="2" opacity=".8"/>
+          <text x="352" y="221" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="700" font-size="15" fill="#1C2740">agent</text>
+          <text x="352" y="239" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#7A8699">Claude Code</text>
+          <text x="352" y="126" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#7A8699">řídí ho tři soubory:</text>
+          <text x="352" y="140" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#2D4173">ústava · persona · mantinely</text>
+          <text x="352" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">2 · AGENT</text>
+        </g></a>
+
+        <!-- vault -->
+        <a class="mm-node" href="#zona-3"><g>
+          <circle class="mm-ring" cx="562" cy="225" r="78" fill="#FBF7EE" stroke="#2D4173" stroke-width="3.5"/>
+          <circle cx="562" cy="225" r="92" fill="none" stroke="#62C4DD" stroke-width="1.5" opacity=".7"/>
+          <text x="562" y="210" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="19" fill="#1C2740">vault</text>
+          <text x="562" y="230" text-anchor="middle" font-family="Rubik,sans-serif" font-size="12.5" fill="#4A5668">jeden zdroj pravdy</text>
+          <text x="562" y="246" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="8.5" fill="#7A8699">wiki · deník · fronta práce</text>
+          <text x="562" y="330" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#2D4173">+ roadmapa · poučení z chyb · deník operací</text>
+          <text x="562" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">3 · JÁDRO&#160;&#160;+&#160;&#160;4 · SMYČKY</text>
+        </g></a>
+
+        <!-- brána -->
+        <g>
+          <rect x="722" y="197" width="34" height="56" rx="10" fill="#FDECEC" stroke="#E85252" stroke-width="2" stroke-dasharray="5 4"/>
+          <text x="739" y="231" text-anchor="middle" font-size="15">✋</text>
+          <rect x="694" y="266" width="90" height="17" rx="8" fill="#FFFFFF"/>
+          <text x="739" y="278" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="10" fill="#E85252">schvaluju já</text>
+        </g>
+
+        <!-- výstupy -->
+        <a class="mm-node" href="#zona-5"><g font-family="Rubik,sans-serif" font-size="13" fill="#1C2740">
+          <circle class="mm-ring" cx="840" cy="105" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="165" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="225" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="285" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="345" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <text x="840" y="110" text-anchor="middle" font-size="14">📝</text>
+          <text x="840" y="170" text-anchor="middle" font-size="14">📧</text>
+          <text x="840" y="230" text-anchor="middle" font-size="14">📄</text>
+          <text x="840" y="290" text-anchor="middle" font-size="14">🗓</text>
+          <text x="840" y="350" text-anchor="middle" font-size="14">🧭</text>
+          <text x="876" y="109">zápisy</text>
+          <text x="876" y="169">koncepty</text>
+          <text x="876" y="229">nabídky</text>
+          <text x="876" y="289">návrhy</text>
+          <text x="876" y="349">přehledy</text>
+          <text x="857" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">5 · VÝSTUPY</text>
+        </g></a>
+      </svg>
+    </div>
+    <p class="mm-note">Poznámka pod mapou: <b>Obsidian</b> celý vault jen zobrazuje (okno, ne úložiště) a <b>Git</b> každou změnu ukládá (cokoliv jde vrátit). Data vždy zůstávají ve složce na počítači.</p>
+    <div class="mm-legend">
+      <span><i style="background:#62C4DD"></i>data dovnitř</span>
+      <span><i style="background:#2D4173"></i>hlavní tok</span>
+      <span><i style="background:#E3B71A"></i>učení systému</span>
+      <span><i style="background:#E85252"></i>mantinely a lidská kontrola</span>
+      <span>// designérům: v podstatě service blueprint služby „druhý mozek"</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZÓNY: CO ============ -->
+<main class="wrap">
+
+  <section class="zone" id="zona-1">
+    <div class="zone-head"><span class="zn">1 · VSTUPY</span><h2>Co do systému teče</h2></div>
+    <p class="sub">Data vznikají tam, kde se pracuje: na schůzkách, v poště, v kalendáři. <button class="term" data-plain="AI pomocník s vlastními pravidly" data-def="Program s umělou inteligencí, který umí sám vykonávat zadané úkoly. Můj má napsaná pravidla, čeho se smí dotknout.">Agent</button> je sbírá sám, nebo je dostane do jediné předschválené složky.</p>
+    <div class="cards">
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Plaud → přepis</span><span class="badge auto">každý večer</span>
+        <h3>Nahrávky ze schůzek</h3>
+        <p class="short">Diktafon schůzku nahraje, večer z ní je text.</p>
+        <p class="more">Nejdůležitější vstup celého systému. Každý večer agent zkontroluje nové nahrávky, stáhne přepisy a rovnou z nich vyrobí zápis: rozhodnutí, úkoly a hlavně sliby („co jsem komu řekla, že pošlu"). Cíl: klient má výstup do 24 hodin.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Gmail</span><span class="badge">jen výsek</span>
+        <h3>Pošta, ale ne celá</h3>
+        <p class="short">Jen vlákna s hvězdičkou a pošta od lidí z <button class="term" data-plain="schválený seznam odesílatelů" data-def="Seznam lidí, jejichž zprávy smí agent číst. Kdo na seznamu není, toho poštu agent nevidí.">whitelistu</button>.</p>
+        <p class="more">Agent nikdy nečte celý e-mail. Čtecí rozsah je uzavřený: hvězdička u mě znamená „čeká na vyřízení" (dokud ji nesundám já), plus nepřečtená pošta od schválených lidí. Výstupem jsou fronty, připomínky slibů a nachystané odpovědi.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Google kalendář</span><span class="badge">čtení</span>
+        <h3>Kalendář</h3>
+        <p class="short">Čte schůzky, hlídá kolize a moji kapacitu.</p>
+        <p class="more">Z kalendáře agent pozná, co se chystá i co proběhlo: připomene podklady před schůzkou, po schůzce čeká přepis. Hlídá, když se schůzky kupí přes rozumnou mez nebo lezou do večerů. Zapisovat smí jen bloky s označením [NÁVRH], a nikdy nesmí nikoho pozvat.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">inbox/</span><span class="badge gold">předschváleno</span>
+        <h3>Složka „zpracuj sám"</h3>
+        <p class="short">Co sem vložím, agent zařadí bez ptaní.</p>
+        <p class="more">Jediné místo, kde platí „zpracuj a zařaď bez ptaní". Články, poznámky, podklady od klientů. Ostatní AI pomocníci (třeba ten v telefonu) smí do systému přispívat výhradně tudy: jeden poznatek, jeden soubor.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">~/Downloads</span><span class="badge auto">denní kontrola</span>
+        <h3>Stažené soubory</h3>
+        <p class="short">Denní pohled: co přibylo a kam by to patřilo.</p>
+        <p class="more">Moje přiznaná slabina: stahuju a netřídím. Agent proto denně jen nahlédne (nic nepřesouvá) a předloží návrh zařazení. Přesun se děje až po mém schválení: report, souhlas, přesun.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Google Drive</span><span class="badge">originály</span>
+        <h3>Dokumenty a přílohy</h3>
+        <p class="short">PDF a prezentace žijí tady, systém na ně odkazuje.</p>
+        <p class="more">Znalostní systém drží jen text. Originály (smlouvy, prezentace, podklady) mají jedno kanonické místo na Drivu a stránky na ně odkazují. Agent Drive čte; zapisovat smí jen do jediné předschválené zálohovací složky.</p>
+      </div>
+    </div>
+    <div class="conn">data tečou dál ↓</div>
+  </section>
+
+  <section class="zone" id="zona-2">
+    <div class="zone-head"><span class="zn">2 · AGENT</span><h2>Kdo se o systém stará</h2></div>
+    <p class="sub">Nad složkou běží <button class="term" data-plain="AI nástroj pracující přímo se soubory" data-def="Nástroj od Anthropicu, ve kterém AI pracuje přímo se soubory na počítači — čte je, píše a spouští postupy. Ovládá se psaním, česky.">Claude Code</button>. Není to chat, který po zavření všechno zapomene: chování mu určují tři soubory, které si načte před každou prací.</p>
+    <div class="cards">
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">CLAUDE.md</span><span class="badge">ústava</span>
+        <h3>Kdo jsi a co je priorita</h3>
+        <p class="short">Role agenta, priorita č. 1, průběh každého sezení.</p>
+        <p class="more">Základní dokument. Definuje roli („správce znalostí a moje dotahovací křídlo"), prioritu č. 1 (výstupy ze schůzek), postup zpracování nových souborů i to, jak sezení začíná a končí. Když se osvědčí nové pravidlo, doplní se sem: ústava roste ze zkušenosti.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">persona-kaca.md</span><span class="badge">kdo jsem já</span>
+        <h3>Hodnoty a rozhodování</h3>
+        <p class="short">Silné stránky, vize, slabiny, kritéria „vzít / nevzít".</p>
+        <p class="more">Aby agent radil dobře, musí vědět, komu radí. Sepsala jsem hodnoty, vizi na dva tři roky i slabiny („láká mě všechno a kývám"). Když řeším novou zakázku, agent drží stranu mé vize, ne momentálního nadšení, a připomene cenu, kterou by „ano" stálo.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">guardrails.md</span><span class="badge lock">absolutní přednost</span>
+        <h3>Mantinely: co nesmí</h3>
+        <p class="short">12 bezpečnostních pravidel nad jakýmkoliv úkolem.</p>
+        <p class="more">Kam smí zapisovat, že nikdy nic nemaže, že poštu jen chystá, že citlivá čísla neopouštějí počítač. Když se úkol dostane do konfliktu s pravidly, agent se zastaví a zeptá. Důvěra v celý systém stojí právě tady.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">.claude/skills/</span><span class="badge">24 postupů</span>
+        <h3><button class="term" data-plain="zapsané pracovní postupy pro AI" data-def="Soubor s návodem, jak přesně má AI udělat konkrétní typ práce — třeba zápis ze schůzky nebo nabídku. Napíše se jednou, používá se pořád.">Skills</button>: hotové postupy</h3>
+        <p class="short">Ověřený postup = návod, který se dá kdykoliv zavolat.</p>
+        <p class="more">Zápis ze schůzky, nabídka s cenou, prezentace v mém vizuálu, můj tón psaní, „zlidšťovač" textů… Každý postup je soubor s přesným návodem a šablonami. Pravidlo zní: nejdřív postupy, pak tvorba. Nic se nevymýšlí dvakrát.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">scheduled tasks</span><span class="badge auto">3 běhy</span>
+        <h3>Automatické běhy</h3>
+        <p class="short">Ráno přehled · večer zpracování · pátek rekapitulace.</p>
+        <p class="more">Ráno: co mě dnes čeká, co visí, co je po termínu. Večer: nové přepisy na zápisy, záloha, aktualizace přehledů. Pátek: týdenní ohlédnutí. Každý běh končí zápisem do deníku operací, takže se dá dohledat, co se kdy stalo.</p>
+      </div>
+    </div>
+    <div class="conn">agent plní jádro ↓</div>
+  </section>
+
+  <section class="zone" id="zona-3">
+    <div class="zone-head"><span class="zn">3 · JÁDRO</span><h2><button class="term" data-plain="trezor: složka se vším" data-def="Anglicky „trezor". Tady: jedna složka na disku, ve které žije celý druhý mozek. Všechno ostatní jsou jen okna do ní.">Vault</button>, jeden zdroj pravdy</h2></div>
+    <p class="sub">Obyčejná složka na disku, uvnitř jen <button class="term" data-plain="obyčejný text se značkami" data-def="Textový formát, který zvládne přečíst jakýkoliv program, dnes i za dvacet let. Nadpisy a odkazy se píší jednoduchými značkami.">markdown</button>. Žádná databáze, žádná závislost na jednom výrobci: kdyby zítra zmizel Claude i Obsidian, texty zůstanou čitelné.</p>
+    <div class="panel">
+      <div class="cards">
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">wiki/</span><span class="badge">syntéza, ne kopie</span>
+          <h3>Znalosti po tématech</h3>
+          <p class="short">Stránky o klientech, oborovém know-how, byznysu.</p>
+          <p class="more">Srdce systému. Každý zdroj se přečte jednou a shrne do stránky vlastními slovy, s odkazem na originál. Největší část: klienti. Každý má stránku s kontextem, historií, úkoly a sliby. Finanční stránky žijí ve zvláštním režimu: jen v počítači, mimo zálohu na internetu.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">journal/</span><span class="badge">deník</span>
+          <h3>Co se kdy stalo</h3>
+          <p class="short">Datované záznamy: zápisy, koncepty, reporty.</p>
+          <p class="more">Časová osa systému. Zápisy ze schůzek, koncepty nabídek a mailů, jednorázové reporty. Pravidlo vrstev: wiki drží živé znalosti bez data v názvu, deník všechno datované. Co je stopa procesu, nepatří mezi znalosti.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">_system/</span><span class="badge">řízení</span>
+          <h3>Provozní paměť</h3>
+          <p class="short">Deník operací, fronta práce, přehled dne, katalog.</p>
+          <p class="more">Log je deník toho, co agent udělal. <button class="term" data-plain="fronta práce" data-def="Seznam „co se má stát": nápady, úkoly a čekající rozhodnutí, každé s datem a souvislostmi. Nic z konverzací nezapadne.">Backlog</button> je fronta toho, co se má stát. Dashboard je domovská stránka s úkoly. Díky nim naváže další sezení přesně tam, kde předchozí skončilo.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">raw/processed/</span><span class="badge">zdroje</span>
+          <h3>Zpracované originály</h3>
+          <p class="short">Podklady, na které znalostní stránky odkazují.</p>
+          <p class="more">Dlouhý text (přepis, článek) se celý čte jen jednou, při zpracování. Dál se pracuje se shrnutím; do originálu se agent vrací jen na výslovnou žádost. Šetří to čas i peníze za AI.</p>
+        </div>
+      </div>
+      <div class="core-side">
+        <div class="side-card"><b>Obsidian = okno</b><button class="term" data-plain="aplikace na čtení a prolinkování poznámek" data-def="Aplikace zdarma, která zobrazí složku textových souborů jako prolinkovanou znalostní síť s vyhledáváním. Nic neřídí, jen hezky ukazuje.">Obsidian</button> mi složku zobrazuje jako prolinkovanou síť: stránky, odkazy, vyhledávání, domovská stránka s úkoly. Kdyby zmizel, data zůstanou.</div>
+        <div class="side-card"><b>Git + GitHub = záchranná brzda</b><button class="term" data-plain="ukládání historie všech změn" data-def="Nástroj, který si pamatuje každou verzi každého souboru. Cokoliv se pokazí, jde vrátit. GitHub je jeho záloha na internetu, u mě soukromá.">Git</button> uloží každou změnu, takže vždy existuje cesta zpět; záloha jde do soukromého úložiště. Citlivá čísla se nezálohují na internet vůbec.</div>
+      </div>
+    </div>
+    <div class="conn">a systém se přitom učí ↓</div>
+  </section>
+
+  <section class="zone" id="zona-4">
+    <div class="zone-head"><span class="zn">4 · SMYČKY</span><h2>Jak se systém sám zlepšuje</h2></div>
+    <p class="sub">Druhý mozek není projekt, který se jednou dokončí. Je to organismus: každá chyba a každé opakování ho posouvá. Stavěli jsme ho stejně, jako učím klienty navrhovat služby: nejdřív porozumět, pak malý pokus, pak teprve škálovat.</p>
+    <div class="loop-panel">
+      <div class="cards">
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">lessons-learned.md</span>
+          <h3>Poučení z chyb</h3>
+          <p class="short">Každá chyba se zapíše a stane se pravidlem.</p>
+          <p class="more">Když vrátím výstup s připomínkou, agent nejdřív zapíše poučení (co bylo špatně, jaké pravidlo z toho plyne) a teprve pak opravuje. Stejnou chybu nechci vidět dvakrát. Jednou měsíčně se poučení projdou a co se osvědčilo, povýší do ústavy nebo postupů. Vlastně formativní hodnocení, jen pro systém místo pro studenty.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">ohio-kandidati.md</span>
+          <h3><button class="term" data-plain="„na jedno posezení": z opakované práce udělej postup" data-def="Zkratka Only Handle It Once — každé věci se dotkni jen jednou. Co se opakuje potřetí, má se stát zapsaným postupem.">OHIO</button>: konec opakování</h3>
+          <p class="short">Třetí opakování ruční práce → návrh na postup.</p>
+          <p class="more">Agent sleduje, jaké úkoly dělám ručně opakovaně. Když poznám, že dělám podobnou věc potřetí, sám navrhne: postavíme na to postup? Tak vznikl třeba postup na nabídky. Rutina se kus po kuse mění v zapsané know-how.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">backlog.md</span>
+          <h3>Nápady nezapadají</h3>
+          <p class="short">Co padne v řeči, jde do fronty s datem a kontextem.</p>
+          <p class="more">Když v konverzaci padne nápad nebo úkol, který se hned neřeší, agent ho sám zapíše do fronty. Na začátku každého sezení připomene termíny, blokující položky a ležáky starší dvou týdnů.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">roadmap.md</span>
+          <h3>Fáze stavby</h3>
+          <p class="short">Od pravidel přes malý pilot k automatizaci.</p>
+          <p class="more">Nejdřív pravidla a porozumění (inventura všech dat), pak pokus na jedné malé oblasti, pak škálování po tématech, nakonec automatizace. Stejný postup jako u návrhu jakékoliv služby: čtyři fáze, které učím jako Poznávání, Definování, Navrhování a Ověřování.</p>
+        </div>
+      </div>
+      <p class="loop-note">↻ smyčky se vracejí do zóny 2: poučení mění ústavu a mantinely, opakování rodí nové postupy</p>
+    </div>
+
+    <div class="gate">
+      <div class="ico">✋</div>
+      <p><b>Brána: schvaluje člověk.</b> Nic neodchází ven beze mě. Agent připravuje, já rozhoduju: každý mail, každý zápis pro klienta, každá cena. V AI světě se tomu říká <button class="term" data-plain="člověk má poslední slovo" data-def="Princip „human in the loop": AI smí chystat a navrhovat, ale rozhodnutí s dopadem na lidi dělá vždy člověk.">human in the loop</button>, u mě prostě: koncept je návrh, ne akce.</p>
+    </div>
+    <div class="conn">teprve pak jde něco ven ↓</div>
+  </section>
+
+  <section class="zone" id="zona-5">
+    <div class="zone-head"><span class="zn">5 · VÝSTUPY</span><h2>Co ze systému padá</h2></div>
+    <p class="sub">Smysl druhého mozku nejsou uklizené poznámky. Je to rychlost a spolehlivost směrem k lidem, se kterými pracuju.</p>
+    <div class="cards">
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">zápis → Google Doc</span><span class="badge gold">do 24 h</span>
+        <h3>Zápis pro klienta</h3>
+        <p class="short">Ze schůzky strukturovaný zápis do druhého dne.</p>
+        <p class="more">Priorita č. 1. Ze schůzky vznikne zápis s rozhodnutími, akčním plánem a vlastníky úkolů; po mém schválení odchází jako dokument do složky klienta. Úzkým hrdlem už není moje večerní energie, jen moje schválení.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Gmail draft</span><span class="badge">odesílám já</span>
+        <h3>Nachystané odpovědi</h3>
+        <p class="short"><button class="term" data-plain="rozepsaný, neodeslaný mail" data-def="Koncept zprávy: připravený text, který čeká ve složce Rozepsané. Nikam neodešel a neodejde, dokud ho člověk nepošle.">Drafty</button> follow-upů a odpovědí ve správném vlákně.</p>
+        <p class="more">Agent založí koncept, já přečtu, upravím a odešlu. Tlačítko Odeslat je vždycky moje. Sliby ze schůzek se tak mění v odeslané maily, ne ve výčitky.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">nabídka → PDF</span><span class="badge">cena po schválení</span>
+        <h3>Nabídky a dokumenty</h3>
+        <p class="short">Podklady ze znalostí, dokument v mém vizuálu.</p>
+        <p class="more">Nabídka vzniká nad stránkou klienta: kontext, interní zrcadlo „vzít / nevzít", návrh ceny (rozhoduju já), text mým hlasem. Finální dokumenty žijí na Drivu, systém na ně odkazuje.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">kalendář [NÁVRH]</span><span class="badge">bez hostů</span>
+        <h3>Návrhy do kalendáře</h3>
+        <p class="short">Bloky času k potvrzení, nikdy pozvánky za mě.</p>
+        <p class="more">Když z pošty vyplyne „nacenit do čtvrtka", agent navrhne blok v kalendáři označený [NÁVRH]. Potvrdit, posunout nebo smazat ho můžu jedním pohledem. Pozvat někoho dalšího agent nesmí nikdy.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">dashboard</span><span class="badge auto">ráno</span>
+        <h3>Přehled dne</h3>
+        <p class="short">Co dnes, co visí, co slíbili ostatní mně.</p>
+        <p class="more">Domovská stránka: dnešní program s kontextem, úkoly po termínu, sliby klientů (i ty se hlídají), fronta rozhodnutí. Jeden pohled místo pěti aplikací.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ ČERVENÉ ČÁRY ============ -->
+<section class="redlines">
+  <div class="wrap">
+    <h2>Červené čáry: co agent nikdy neudělá</h2>
+    <p class="sub">Nejdůležitější část celého systému. Autonomie funguje jen díky tomu, že má jasné hranice.</p>
+    <div class="rl-grid">
+      <div class="rl"><b>Neposílá maily</b>Jen koncepty. Odeslání je vždy lidské rozhodnutí.</div>
+      <div class="rl"><b>Nemluví za mě navenek</b>Cokoliv jde ke klientům nebo veřejnosti, schvaluju já.</div>
+      <div class="rl"><b>Nikdy nic nemaže</b>Místo mazání karanténa a záznam v deníku. Vždy existuje cesta zpět.</div>
+      <div class="rl"><b>Citlivá čísla zůstávají doma</b>Finance žijí jen v počítači, mimo zálohy na internetu i mimo výstupy.</div>
+      <div class="rl"><b>Nevymýšlí si</b>Když fakt nezná, napíše „doplň". Radši mezera než smyšlenka.</div>
+      <div class="rl"><b>Neposlouchá cizí instrukce</b>Pokyn schovaný v příchozím mailu je data, ne příkaz.</div>
+      <div class="rl"><b>Pravidla nemění sám</b>Změny ústavy a mantinelů jen navrhuje, schvaluje člověk.</div>
+      <div class="rl"><b>Když si není jistý, ptá se</b>Krátká otázka je levnější než špatně zařazený soubor.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLOVNÍČEK ============ -->
+<section class="gloss wrap" id="slovnicek">
+  <h2>Slovníček bez hantýrky</h2>
+  <p class="sub">Stejná vysvětlení, která se schovávají pod podtrženými slovy, na jednom místě. Termíny nechávám v textu záměrně: v AI světě se s nimi potkáte na každém kroku a je lepší je znát než obcházet.</p>
+  <dl class="gl-grid">
+    <div class="gl"><dt>agent</dt><dd>Program s AI, který sám vykonává zadané úkoly podle napsaných pravidel. Ne chat, spíš pracant.</dd></div>
+    <div class="gl"><dt>vault <span class="mono">„trezor"</span></dt><dd>Jedna složka na disku, ve které žije celý druhý mozek.</dd></div>
+    <div class="gl"><dt>markdown</dt><dd>Obyčejný text s jednoduchými značkami pro nadpisy a odkazy. Přečte ho cokoliv, dnes i za dvacet let.</dd></div>
+    <div class="gl"><dt>Claude Code</dt><dd>Nástroj, ve kterém AI pracuje přímo se soubory na počítači. Ovládá se psaním, klidně česky.</dd></div>
+    <div class="gl"><dt>skill <span class="mono">„postup"</span></dt><dd>Soubor s návodem, jak má AI udělat konkrétní typ práce. Napíše se jednou, používá pořád.</dd></div>
+    <div class="gl"><dt>Obsidian</dt><dd>Aplikace zdarma, která složku textů zobrazí jako prolinkovanou síť poznámek s vyhledáváním.</dd></div>
+    <div class="gl"><dt>Git a GitHub</dt><dd>Nástroj, který si pamatuje každou verzi každého souboru, a jeho soukromá záloha na internetu. Cokoliv jde vrátit.</dd></div>
+    <div class="gl"><dt>wiki</dt><dd>Znalostní stránky po tématech, navzájem prolinkované. Shrnutí vlastními slovy, ne kopie zdrojů.</dd></div>
+    <div class="gl"><dt>draft <span class="mono">„koncept"</span></dt><dd>Rozepsaná, neodeslaná zpráva nebo dokument. Čeká na lidské schválení.</dd></div>
+    <div class="gl"><dt>whitelist</dt><dd>Schválený seznam. Tady: lidé, jejichž poštu smí agent číst.</dd></div>
+    <div class="gl"><dt>backlog <span class="mono">„fronta práce"</span></dt><dd>Seznam „co se má stát": nápady a úkoly s datem a souvislostmi, aby nezapadly.</dd></div>
+    <div class="gl"><dt>OHIO</dt><dd>Only Handle It Once, „každé věci se dotkni jen jednou". Co se opakuje potřetí, má se stát postupem.</dd></div>
+    <div class="gl"><dt>guardrails <span class="mono">„mantinely"</span></dt><dd>Pravidla, co AI nikdy nesmí. Mají přednost před jakýmkoliv zadáním.</dd></div>
+    <div class="gl"><dt>human in the loop</dt><dd>Princip: AI chystá a navrhuje, ale rozhodnutí s dopadem na lidi dělá vždy člověk.</dd></div>
+    <div class="gl"><dt>scheduled task <span class="mono">„naplánovaný běh"</span></dt><dd>Úloha, která se spouští sama v určený čas. Tady: ranní přehled, večerní zpracování, páteční rekapitulace.</dd></div>
+    <div class="gl"><dt>service blueprint</dt><dd>Designérská mapa služby: co vidí zákazník a co běží v zákulisí, krok po kroku. Přesně to je tahle stránka.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="facts">
+      <span class="fact">pro zvědavé:</span>
+      <span class="fact">3 týdny provozu</span>
+      <span class="fact">171 uložených verzí</span>
+      <span class="fact">76+ znalostních stránek</span>
+      <span class="fact">24 zapsaných postupů</span>
+      <span class="fact">3 automatické běhy denně/týdně</span>
+    </div>
+    <p class="claim">Nástroje se mění, dobře nastavený systém zůstává.</p>
+    <p class="sig">svidrnochova.cz · mapa systému k srpnu 2026</p>
+  </div>
+</footer>
+
+<button class="switch hidden" id="plainFab" aria-pressed="false"><span class="knob" aria-hidden="true"></span>Polopatě</button>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+  // rozbalování karet (myš i klávesnice)
+  document.querySelectorAll('.card').forEach(c=>{
+    c.setAttribute('aria-expanded','false');
+    const toggle=e=>{
+      if(e.target.closest('.term'))return;
+      c.classList.toggle('open');
+      c.setAttribute('aria-expanded',c.classList.contains('open'));
+    };
+    c.addEventListener('click',toggle);
+    c.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&!e.target.closest('.term')){e.preventDefault();toggle(e);}
+    });
+  });
+
+  // slovníčkové popovery
+  const pop=document.getElementById('pop');let popFor=null;
+  function hidePop(){pop.style.display='none';popFor=null;}
+  document.querySelectorAll('.term').forEach(t=>{
+    t.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(popFor===t){hidePop();return;}
+      pop.innerHTML='<b>'+t.textContent+'</b>'+t.dataset.def;
+      pop.style.display='block';
+      const r=t.getBoundingClientRect();
+      let x=r.left+window.scrollX-12, y=r.bottom+window.scrollY+10;
+      const maxX=window.scrollX+document.documentElement.clientWidth-pop.offsetWidth-12;
+      pop.style.left=Math.max(12,Math.min(x,maxX))+'px';
+      pop.style.top=y+'px';
+      popFor=t;
+    });
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('#pop'))hidePop();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')hidePop();});
+  window.addEventListener('scroll',hidePop,{passive:true});
+
+  // režim Polopatě — přepínač v textu + plovoucí tlačítko, společný stav
+  const sw=document.getElementById('plainSwitch'),fab=document.getElementById('plainFab');
+  function setPlain(on){
+    document.body.classList.toggle('plain',on);
+    [sw,fab].forEach(b=>b.setAttribute('aria-pressed',on));
+  }
+  [sw,fab].forEach(b=>b.addEventListener('click',()=>setPlain(!document.body.classList.contains('plain'))));
+  // plovoucí tlačítko se ukáže, až když horní přepínač zmizí z obrazovky
+  const bar=document.querySelector('.plainbar');
+  if('IntersectionObserver'in window){
+    new IntersectionObserver(es=>{fab.classList.toggle('hidden',es[0].isIntersecting)},{rootMargin:'0px'}).observe(bar);
+  }else{fab.classList.remove('hidden');}
+</script>
+</body>
