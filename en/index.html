@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map of the Second Brain</title>
+<meta name="description" content="An interactive map of Kateřina Švidrnochová’s second brain: how data flows from meetings and email through an AI agent to finished outputs, and what the agent must never do.">
+<meta property="og:title" content="Map of the Second Brain">
+<meta property="og:description" content="How a knowledge system run by an AI agent works: inputs, rules, a single source of truth, improvement loops and outputs for clients.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;900&family=Fragment+Mono&display=swap">
+<style>
+  :root{
+    --ink:#1C2740; --dblue:#2D4173; --lblue:#62C4DD; --yellow:#FFCC00; --red:#E85252;
+    --cream:#FBF7EE; --paper:#FFFFFF; --muted:#7A8699; --body:#4A5668;
+    --hair:#E9E6DE; --lblue-soft:#EFF8FB; --yellow-soft:#FFF6D6; --red-soft:#FDECEC;
+    --mono:'Fragment Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{font-family:'Rubik',system-ui,-apple-system,sans-serif;background:var(--paper);color:var(--body);line-height:1.6}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  .mono{font-family:var(--mono)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:56px 0 8px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--yellow)}
+  h1{font-size:clamp(34px,5.4vw,58px);font-weight:900;color:var(--ink);line-height:1.05;letter-spacing:-.01em;text-wrap:balance;max-width:18ch}
+  .lede{margin-top:20px;font-size:17.5px;max-width:60ch;color:var(--body)}
+  .lede strong{color:var(--ink);font-weight:600}
+
+  /* benefit cards = WHY */
+  .why{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:30px 0 10px}
+  .why .b{border:1px solid var(--hair);border-radius:12px;padding:18px 20px;position:relative;background:var(--paper)}
+  .why .b::before{content:"";position:absolute;top:18px;right:18px;width:14px;height:14px;border-radius:50%}
+  .why .b:nth-child(1)::before{background:var(--yellow)}
+  .why .b:nth-child(2)::before{background:var(--lblue)}
+  .why .b:nth-child(3)::before{border:3px solid var(--red);background:transparent}
+  .why h3{font-size:16.5px;font-weight:700;color:var(--ink);margin-bottom:6px;padding-right:30px}
+  .why p{font-size:14px}
+  .why-note{font-family:var(--mono);font-size:11px;color:var(--muted);margin:10px 0 0}
+
+  /* plain-language bar */
+  .plainbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;border:1px solid var(--hair);background:var(--cream);border-radius:999px;padding:10px 18px;margin:26px 0 0;font-size:14px;color:var(--body)}
+  .plainbar .demo{color:var(--ink)}
+  .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;border:none;background:var(--paper);border:1px solid var(--hair);border-radius:999px;padding:7px 14px;font:inherit;font-size:13.5px;font-weight:600;color:var(--dblue)}
+  .switch .knob{width:30px;height:17px;border-radius:999px;background:#D8D3C6;position:relative;transition:background .15s;flex:none}
+  .switch .knob::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .15s}
+  body.plain .switch .knob{background:var(--lblue)}
+  body.plain .switch .knob::after{transform:translateX(13px)}
+  .switch:focus-visible{outline:3px solid var(--lblue);outline-offset:2px}
+
+  /* ---------- terms (inline glossary) ---------- */
+  .term{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;
+    border-bottom:2px dotted var(--lblue);font-weight:inherit}
+  .term:hover{background:var(--lblue-soft)}
+  .term:focus-visible{outline:3px solid var(--lblue);outline-offset:2px}
+  body.plain .term::after{content:" (" attr(data-plain) ")";color:var(--dblue);font-weight:500;border-bottom:none;font-size:.92em}
+  #pop{position:absolute;z-index:50;max-width:290px;background:var(--ink);color:#fff;border-radius:10px;padding:12px 15px;font-size:13.5px;line-height:1.5;box-shadow:0 10px 30px rgba(28,39,64,.25);display:none}
+  #pop b{color:var(--yellow);display:block;margin-bottom:3px;font-size:13px}
+  #pop::before{content:"";position:absolute;top:-6px;left:24px;width:12px;height:12px;background:var(--ink);transform:rotate(45deg)}
+
+  /* ---------- tools (who plays which role) ---------- */
+  .tools{margin-top:42px}
+  .tools-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:14px}
+  .tools h2{font-size:20px;font-weight:700;color:var(--ink)}
+  .tools-head span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+  .tool{border:1px solid var(--hair);border-radius:10px;padding:12px 14px;background:var(--cream)}
+  .tool .t-name{font-family:var(--mono);font-size:11px;color:var(--dblue);display:block;margin-bottom:4px;letter-spacing:.04em}
+  .tool p{font-size:13px;line-height:1.5}
+  .mm-note{padding:8px 24px 2px;font-size:12.5px;color:var(--body)}
+  .mm-note b{color:var(--ink)}
+
+  /* ---------- minimap ---------- */
+  .minimap{margin:44px 0 0;border:1px solid var(--hair);border-radius:16px;background:var(--paper);overflow:hidden}
+  .minimap .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;padding:20px 24px 4px}
+  .minimap h2{font-size:20px;font-weight:700;color:var(--ink)}
+  .minimap .head span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .mm-scroll{overflow-x:auto;padding:6px 10px 14px}
+  .mm-scroll svg{display:block;min-width:760px;width:100%;height:auto}
+  .mm-node{cursor:pointer}
+  .mm-node:hover .mm-ring{stroke-width:3.5}
+  .mm-node:focus-visible{outline:3px solid var(--lblue)}
+  .mm-legend{display:flex;flex-wrap:wrap;gap:16px;padding:0 24px 18px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .mm-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+
+  /* ---------- zones ---------- */
+  main{padding:26px 0 0}
+  .zone{position:relative;padding:34px 0 8px}
+  .zone-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .zn{font-family:var(--mono);font-size:11px;color:var(--dblue);border:1px solid var(--dblue);border-radius:999px;padding:4px 11px;letter-spacing:.14em;flex:none}
+  .zone h2{font-size:23px;font-weight:700;color:var(--ink)}
+  .zone .sub{font-size:14.5px;color:var(--muted);margin:8px 0 20px;max-width:72ch}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+  .card{background:var(--paper);border:1px solid var(--hair);border-radius:12px;padding:15px 17px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;text-align:left;font:inherit;color:inherit;width:100%}
+  .card:hover{border-color:var(--lblue);box-shadow:0 4px 16px rgba(45,65,115,.07)}
+  .card:focus-visible{outline:3px solid var(--lblue);outline-offset:2px}
+  .card h3{font-size:15px;font-weight:700;color:var(--ink);padding-right:22px}
+  .card .file{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-bottom:6px}
+  .badge{font-family:var(--mono);font-size:10px;border:1px solid var(--hair);border-radius:999px;padding:2px 9px;color:var(--muted);margin-left:0;display:inline-block;margin-bottom:8px}
+  .badge.auto{color:#1E8FB0;border-color:rgba(98,196,221,.55)}
+  .badge.lock{color:var(--red);border-color:rgba(232,82,82,.4)}
+  .badge.gold{color:#8A7413;border-color:rgba(255,204,0,.6)}
+  .card .short{font-size:13.5px;margin-top:4px}
+  .card .more{display:none;font-size:13.5px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--hair)}
+  .card.open .more{display:block}
+  .card .hint{position:absolute;top:13px;right:14px;font-size:16px;color:var(--muted);font-weight:400;transition:transform .15s}
+  .card.open .hint{transform:rotate(45deg)}
+  code{font-family:var(--mono);font-size:12px;background:var(--cream);padding:1px 5px;border-radius:4px;color:var(--dblue)}
+
+  /* connector between zones */
+  .conn{display:flex;align-items:center;gap:10px;margin:22px 0 0;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .conn::before{content:"";width:2px;height:34px;background:linear-gradient(var(--hair),var(--dblue));margin-left:24px;border-radius:2px}
+
+  /* core + loops panels */
+  .panel{border:1.5px solid var(--dblue);border-radius:16px;padding:20px}
+  .panel .cards .card{background:var(--cream);border-color:#EFE9DA}
+  .core-side{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:12px}
+  .side-card{background:var(--dblue);color:#E7ECF6;border-radius:12px;padding:14px 17px;font-size:13.5px;line-height:1.55}
+  .side-card b{display:block;font-size:14px;font-weight:700;color:var(--lblue);margin-bottom:4px}
+  .side-card .term{border-bottom-color:rgba(255,255,255,.5);color:#fff}
+  body.plain .side-card .term::after{color:var(--yellow)}
+  .loop-panel{border:1.5px solid #EFD98A;background:var(--yellow-soft);border-radius:16px;padding:20px}
+  .loop-panel .cards .card{background:var(--paper);border-color:#EFE3B8}
+  .loop-note{font-family:var(--mono);font-size:11.5px;color:#8A7413;margin-top:14px}
+
+  /* gate */
+  .gate{margin:30px 0 0;border:2px dashed var(--red);border-radius:14px;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;background:var(--paper)}
+  .gate .ico{width:34px;height:34px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex:none}
+  .gate b{color:var(--red)}
+  .gate p{font-size:14px}
+
+  /* red lines */
+  .redlines{background:var(--ink);color:#fff;margin-top:52px;padding:46px 0}
+  .redlines h2{font-size:22px;font-weight:700}
+  .redlines .sub{color:#AEB9D4;font-size:14.5px;margin:8px 0 22px;max-width:72ch}
+  .rl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px}
+  .rl{background:rgba(255,255,255,.05);border-left:3px solid var(--red);border-radius:8px;padding:13px 16px;font-size:13.5px;color:#CBD4E6;line-height:1.5}
+  .rl b{display:block;color:#fff;font-size:14px;margin-bottom:3px}
+
+  /* glossary */
+  .gloss{padding:46px 0 8px}
+  .gloss h2{font-size:22px;font-weight:700;color:var(--ink)}
+  .gloss .sub{font-size:14.5px;color:var(--muted);margin:8px 0 20px;max-width:72ch}
+  .gl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px 26px}
+  .gl{border-top:1px solid var(--hair);padding:10px 2px;font-size:13.5px}
+  .gl dt{font-weight:700;color:var(--ink);font-size:14px}
+  .gl dt .mono{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
+  .gl dd{margin-top:2px}
+
+  footer{padding:34px 0 46px;border-top:1px solid var(--hair);margin-top:40px}
+  footer .facts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  footer .fact{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--hair);border-radius:999px;padding:4px 12px}
+  footer .claim{font-weight:600;color:var(--ink);font-size:15px}
+  footer .sig{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px}
+
+  #plainFab{position:fixed;right:18px;bottom:18px;z-index:40;box-shadow:0 8px 24px rgba(28,39,64,.22);background:var(--paper)}
+  #plainFab.hidden{display:none}
+  @media (max-width:640px){
+    #plainFab{right:12px;bottom:12px}
+    .hero{padding-top:40px}
+    .plainbar{border-radius:16px}
+  }
+  @media (prefers-reduced-motion:reduce){.card,.card .hint,.switch .knob,.switch .knob::after{transition:none}}
+</style>
+
+<body>
+
+<!-- ============ HERO: WHY ============ -->
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Second brain · Kateřina Švidrnochová × Claude</p>
+    <h1>A system that remembers and follows through for&nbsp;me</h1>
+    <p class="lede">Every meeting has a finished write-up within 24 hours. No promise gets lost. Email replies are waiting, ready to send. <strong>And my head has stopped keeping records and gone back to thinking.</strong> This is a map of the system that takes care of it. I go through it from top to bottom: first what it is for, then who plays which role, then where the data flows, and finally each part in detail. You don’t need to know a single tool beforehand.</p>
+
+    <div class="why">
+      <div class="b"><h3>Nothing slips through</h3><p>Tasks, promises and loose threads have one place and a keeper who brings them back up. This is exactly where credibility with clients is won or lost.</p></div>
+      <div class="b"><h3>Outputs within 24 hours</h3><p>A meeting turns into a write-up for the client by the next day. It used to take a week, and it cost me trust.</p></div>
+      <div class="b"><h3>Only I decide</h3><p>The system prepares, a human approves. Nothing goes out without my consent and nothing is ever deleted.</p></div>
+    </div>
+    <p class="why-note">// the order WHY → HOW → WHAT is no accident: the Golden Circle works for maps too</p>
+
+    <div class="plainbar">
+      <span class="demo">A glossary at hand: jargon is <button class="term" data-plain="a dotted underline" data-def="Exactly like this. Tap and an explanation appears, without the jargon.">underlined like this</button>. Tap it.</span>
+      <button class="switch" id="plainSwitch" aria-pressed="false"><span class="knob" aria-hidden="true"></span>Plain-language mode: explain everything at once</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ TOOLS: WHO PLAYS WHICH ROLE ============ -->
+<section class="wrap tools" id="nastroje">
+  <div class="tools-head"><h2>Who plays which role</h2><span>// six names you will meet in the map</span></div>
+  <div class="tool-grid">
+    <div class="tool"><span class="t-name">a folder on the computer (the “vault”)</span><p>Everything lives here: plain text files. A foundation that survives the replacement of any tool.</p></div>
+    <div class="tool"><span class="t-name">Claude Code</span><p>The AI agent that looks after the folder: it reads, sorts, writes and watches deadlines. I give it tasks in writing, in Czech.</p></div>
+    <div class="tool"><span class="t-name">Obsidian</span><p>Just a pair of glasses. It displays the folder nicely and links it up, but the data doesn’t live in it and it controls nothing. If it disappeared, nothing would be lost.</p></div>
+    <div class="tool"><span class="t-name">Plaud</span><p>A smart voice recorder: it records a meeting and turns it into text for further processing.</p></div>
+    <div class="tool"><span class="t-name">Git + GitHub</span><p>A memory of changes and a private backup. Every edit is saved and can be undone at any time.</p></div>
+    <div class="tool"><span class="t-name">Google account</span><p>Email, calendar, documents. The agent sees into them only in precisely defined slices.</p></div>
+  </div>
+</section>
+
+<!-- ============ MINIMAP: HOW ============ -->
+<section class="wrap">
+  <div class="minimap" id="minimapa">
+    <div class="head"><h2>The whole flow on one screen</h2><span>// tap a node to jump to the detail</span></div>
+    <div class="mm-scroll">
+      <svg viewBox="0 0 960 446" role="img" aria-label="Overview map: inputs flow to the agent, which fills the knowledge vault inside a frame of guardrails; outputs leave only through a human approval gate.">
+        <!-- guardrails frame -->
+        <rect x="268" y="70" width="478" height="290" rx="16" fill="none" stroke="#E85252" stroke-width="2" stroke-dasharray="7 6"/>
+        <rect x="270" y="72" width="474" height="24" rx="12" fill="#FDECEC"/>
+        <text x="507" y="88" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="10" fill="#C63B3B">GUARDRAILS: no sending · no deleting · no inventing · no rule changes</text>
+
+        <!-- input flows -->
+        <g stroke="#62C4DD" stroke-width="2" fill="none" opacity=".85">
+          <path d="M150 95 C 220 95 240 185 300 207"/>
+          <path d="M150 155 C 215 155 240 200 300 215"/>
+          <path d="M150 215 C 220 215 240 222 300 223"/>
+          <path d="M150 275 C 215 275 240 245 300 233"/>
+          <path d="M150 335 C 220 335 245 260 300 241"/>
+        </g>
+
+        <!-- main flow -->
+        <path d="M420 225 L 460 225" stroke="#2D4173" stroke-width="3"/>
+        <path d="M656 225 L 714 225" stroke="#2D4173" stroke-width="3"/>
+        <path d="M765 225 L 798 225" stroke="#2D4173" stroke-width="3"/>
+        <g stroke="#2D4173" stroke-width="3" fill="#2D4173">
+          <path d="M456 219 l10 6 -10 6 z"/><path d="M710 219 l10 6 -10 6 z"/><path d="M793 219 l10 6 -10 6 z"/>
+        </g>
+        <path d="M840 105 L 840 345" stroke="#2D4173" stroke-width="2"/>
+
+        <!-- improvement loop -->
+        <path d="M562 303 C 562 368 390 368 352 292" stroke="#E3B71A" stroke-width="2.5" stroke-dasharray="6 6" fill="none"/>
+        <path d="M346 302 l3 -13 11 8 z" fill="#E3B71A"/>
+        <text x="457" y="380" font-family="Fragment Mono,monospace" font-size="10" fill="#8A7413" text-anchor="middle">improvement loops ↻</text>
+
+        <!-- inputs -->
+        <a class="mm-node" href="#zona-1"><g>
+          <g font-family="Rubik,sans-serif" font-size="13" fill="#1C2740">
+            <circle class="mm-ring" cx="120" cy="95"  r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="155" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="215" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="275" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <circle class="mm-ring" cx="120" cy="335" r="26" fill="#EFF8FB" stroke="#62C4DD" stroke-width="2.5"/>
+            <text x="120" y="100" text-anchor="middle" font-size="14">🎙</text>
+            <text x="120" y="160" text-anchor="middle" font-size="14">✉️</text>
+            <text x="120" y="220" text-anchor="middle" font-size="14">📅</text>
+            <text x="120" y="280" text-anchor="middle" font-size="14">📥</text>
+            <text x="120" y="340" text-anchor="middle" font-size="14">📁</text>
+            <text x="78" y="99"  text-anchor="end">meetings</text>
+            <text x="78" y="159" text-anchor="end">email</text>
+            <text x="78" y="219" text-anchor="end">calendar</text>
+            <text x="78" y="279" text-anchor="end">inbox</text>
+            <text x="78" y="339" text-anchor="end">documents</text>
+          </g>
+          <text x="120" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">1 · INPUTS</text>
+        </g></a>
+
+        <!-- agent -->
+        <a class="mm-node" href="#zona-2"><g>
+          <circle class="mm-ring" cx="352" cy="225" r="52" fill="#FFFFFF" stroke="#2D4173" stroke-width="3"/>
+          <circle cx="352" cy="225" r="64" fill="none" stroke="#FFCC00" stroke-width="2" opacity=".8"/>
+          <text x="352" y="221" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="700" font-size="15" fill="#1C2740">agent</text>
+          <text x="352" y="239" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#7A8699">Claude Code</text>
+          <text x="352" y="118" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#7A8699">run by three files:</text>
+          <text x="352" y="132" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#2D4173">constitution · persona</text>
+          <text x="352" y="146" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#2D4173">· guardrails</text>
+          <text x="352" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">2 · AGENT</text>
+        </g></a>
+
+        <!-- vault -->
+        <a class="mm-node" href="#zona-3"><g>
+          <circle class="mm-ring" cx="562" cy="225" r="78" fill="#FBF7EE" stroke="#2D4173" stroke-width="3.5"/>
+          <circle cx="562" cy="225" r="92" fill="none" stroke="#62C4DD" stroke-width="1.5" opacity=".7"/>
+          <text x="562" y="210" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="19" fill="#1C2740">vault</text>
+          <text x="562" y="230" text-anchor="middle" font-family="Rubik,sans-serif" font-size="12.5" fill="#4A5668">single source of truth</text>
+          <text x="562" y="246" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="8.5" fill="#7A8699">wiki · journal · backlog</text>
+          <text x="562" y="330" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="9" fill="#2D4173">+ roadmap · lessons learned · operations log</text>
+          <text x="562" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">3 · CORE&#160;&#160;+&#160;&#160;4 · LOOPS</text>
+        </g></a>
+
+        <!-- gate -->
+        <g>
+          <rect x="722" y="197" width="34" height="56" rx="10" fill="#FDECEC" stroke="#E85252" stroke-width="2" stroke-dasharray="5 4"/>
+          <text x="739" y="231" text-anchor="middle" font-size="15">✋</text>
+          <rect x="694" y="266" width="90" height="17" rx="8" fill="#FFFFFF"/>
+          <text x="739" y="278" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="10" fill="#E85252">I approve</text>
+        </g>
+
+        <!-- outputs -->
+        <a class="mm-node" href="#zona-5"><g font-family="Rubik,sans-serif" font-size="13" fill="#1C2740">
+          <circle class="mm-ring" cx="840" cy="105" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="165" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="225" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="285" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <circle class="mm-ring" cx="840" cy="345" r="26" fill="#FFFFFF" stroke="#2D4173" stroke-width="2.5"/>
+          <text x="840" y="110" text-anchor="middle" font-size="14">📝</text>
+          <text x="840" y="170" text-anchor="middle" font-size="14">📧</text>
+          <text x="840" y="230" text-anchor="middle" font-size="14">📄</text>
+          <text x="840" y="290" text-anchor="middle" font-size="14">🗓</text>
+          <text x="840" y="350" text-anchor="middle" font-size="14">🧭</text>
+          <text x="876" y="109">write-ups</text>
+          <text x="876" y="169">drafts</text>
+          <text x="876" y="229">proposals</text>
+          <text x="876" y="289">time blocks</text>
+          <text x="876" y="349">briefings</text>
+          <text x="857" y="428" text-anchor="middle" font-family="Fragment Mono,monospace" font-size="11" fill="#7A8699">5 · OUTPUTS</text>
+        </g></a>
+      </svg>
+    </div>
+    <p class="mm-note">A note below the map: <b>Obsidian</b> only displays the vault (a window, not storage) and <b>Git</b> saves every change (anything can be undone). The data always stays in the folder on the computer.</p>
+    <div class="mm-legend">
+      <span><i style="background:#62C4DD"></i>data in</span>
+      <span><i style="background:#2D4173"></i>main flow</span>
+      <span><i style="background:#E3B71A"></i>the system learning</span>
+      <span><i style="background:#E85252"></i>guardrails and human control</span>
+      <span>// for designers: in effect a service blueprint of the “second brain” service</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ZONES: WHAT ============ -->
+<main class="wrap">
+
+  <section class="zone" id="zona-1">
+    <div class="zone-head"><span class="zn">1 · INPUTS</span><h2>What flows into the system</h2></div>
+    <p class="sub">Data is created where the work happens: in meetings, in email, in the calendar. The <button class="term" data-plain="an AI helper with its own rules" data-def="A program with artificial intelligence that can carry out assigned tasks by itself. Mine has written rules about what it may touch.">agent</button> collects it itself, or receives it in a single pre-approved folder.</p>
+    <div class="cards">
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Plaud → transcript</span><span class="badge auto">every evening</span>
+        <h3>Meeting recordings</h3>
+        <p class="short">The recorder captures the meeting; by evening it is text.</p>
+        <p class="more">The most important input of the whole system. Every evening the agent checks for new recordings, downloads the transcripts and turns them straight into a write-up: decisions, tasks and above all promises (“what I told whom I would send”). The goal: the client has the output within 24 hours.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Gmail</span><span class="badge">a slice only</span>
+        <h3>Email, but not all of it</h3>
+        <p class="short">Only starred threads and mail from people on the <button class="term" data-plain="approved list of senders" data-def="A list of people whose messages the agent may read. If someone is not on the list, the agent does not see their mail.">allowlist</button>.</p>
+        <p class="more">The agent never reads the whole mailbox. The reading scope is closed: a star in my inbox means “waiting to be dealt with” (until I remove it myself), plus unread mail from approved people. The output is queues, reminders of promises and prepared replies.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Google Calendar</span><span class="badge">read</span>
+        <h3>Calendar</h3>
+        <p class="short">Reads meetings, watches for clashes and my capacity.</p>
+        <p class="more">From the calendar the agent can tell what is coming and what has happened: it reminds me of materials before a meeting and expects a transcript after it. It flags when meetings pile up beyond a reasonable limit or creep into the evenings. It may only write blocks marked [NÁVRH] (Czech for “proposal”), and it must never invite anyone.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">inbox/</span><span class="badge gold">pre-approved</span>
+        <h3>The “handle it yourself” folder</h3>
+        <p class="short">Whatever I drop here, the agent files without asking.</p>
+        <p class="more">The only place where “process and file without asking” applies. Articles, notes, materials from clients. Other AI helpers (the one on my phone, for instance) may contribute to the system only through here: one insight, one file.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">~/Downloads</span><span class="badge auto">daily check</span>
+        <h3>Downloads</h3>
+        <p class="short">A daily look: what has arrived and where it would belong.</p>
+        <p class="more">My admitted weakness: I download and never sort. So the agent only takes a look each day (it moves nothing) and presents a filing proposal. The move happens only after my approval: report, consent, move.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Google Drive</span><span class="badge">originals</span>
+        <h3>Documents and attachments</h3>
+        <p class="short">PDFs and presentations live here; the system links to them.</p>
+        <p class="more">The knowledge system holds only text. Originals (contracts, presentations, source materials) have one canonical place on Drive and the pages link to them. The agent reads Drive; it may write only to a single pre-approved backup folder.</p>
+      </div>
+    </div>
+    <div class="conn">the data flows on ↓</div>
+  </section>
+
+  <section class="zone" id="zona-2">
+    <div class="zone-head"><span class="zn">2 · AGENT</span><h2>Who looks after the system</h2></div>
+    <p class="sub"><button class="term" data-plain="an AI tool working directly with files" data-def="A tool from Anthropic in which AI works directly with the files on a computer: it reads them, writes them and runs procedures. You operate it by writing, in my case in Czech.">Claude Code</button> runs on top of the folder. It is not a chat that forgets everything once you close it: its behaviour is set by three files that it loads before any work.</p>
+    <div class="cards">
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">CLAUDE.md</span><span class="badge">constitution</span>
+        <h3>Who you are and what the priority is</h3>
+        <p class="short">The agent’s role, priority no. 1, how every session runs.</p>
+        <p class="more">The founding document. It defines the role (“steward of knowledge and the wing that follows through for me”), priority no. 1 (outputs from meetings), the procedure for processing new files and how a session starts and ends. When a new rule proves itself, it is added here: the constitution grows from experience.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">persona-kaca.md</span><span class="badge">who I am</span>
+        <h3>Values and decision-making</h3>
+        <p class="short">Strengths, vision, weaknesses, “take it / leave it” criteria.</p>
+        <p class="more">To advise me well, the agent has to know who it is advising. I wrote down my values, a vision for the next two to three years and my weaknesses (“everything tempts me and I say yes”). When I am considering a new project, the agent takes the side of my vision, not of my enthusiasm in the moment, and reminds me what a “yes” would cost.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">guardrails.md</span><span class="badge lock">absolute precedence</span>
+        <h3>Guardrails: what it must not do</h3>
+        <p class="short">12 safety rules that stand above any task.</p>
+        <p class="more">Where it may write, that it never deletes anything, that it only prepares email, that sensitive figures never leave the computer. When a task conflicts with the rules, the agent stops and asks. Trust in the whole system rests right here.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">.claude/skills/</span><span class="badge">24 procedures</span>
+        <h3><button class="term" data-plain="written working procedures for AI" data-def="A file with instructions on exactly how AI should do a specific type of work, such as a meeting write-up or a proposal. Written once, used again and again.">Skills</button>: ready-made procedures</h3>
+        <p class="short">A proven procedure = instructions you can call up at any time.</p>
+        <p class="more">A meeting write-up, a proposal with a price, a presentation in my visual style, my tone of voice, a text “humaniser”… Each procedure is a file with precise instructions and templates. The rule is: procedures first, creation second. Nothing gets invented twice.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">scheduled tasks</span><span class="badge auto">3 runs</span>
+        <h3>Automatic runs</h3>
+        <p class="short">Morning briefing · evening processing · Friday recap.</p>
+        <p class="more">Morning: what is ahead of me today, what is pending, what is overdue. Evening: new transcripts into write-ups, backup, updated overviews. Friday: a look back at the week. Every run ends with an entry in the operations log, so you can trace what happened when.</p>
+      </div>
+    </div>
+    <div class="conn">the agent fills the core ↓</div>
+  </section>
+
+  <section class="zone" id="zona-3">
+    <div class="zone-head"><span class="zn">3 · CORE</span><h2>The <button class="term" data-plain="a safe: the folder with everything in it" data-def="Literally a safe. Here: one folder on a disk in which the whole second brain lives. Everything else is just a window into it.">vault</button>, a single source of truth</h2></div>
+    <p class="sub">A plain folder on a disk with nothing but <button class="term" data-plain="plain text with simple marks" data-def="A text format that any program can read, today and in twenty years. Headings and links are written with simple marks.">markdown</button> inside. No database, no dependence on a single vendor: if Claude and Obsidian both disappeared tomorrow, the texts would stay readable.</p>
+    <div class="panel">
+      <div class="cards">
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">wiki/</span><span class="badge">synthesis, not a copy</span>
+          <h3>Knowledge by topic</h3>
+          <p class="short">Pages on clients, professional know-how, the business.</p>
+          <p class="more">The heart of the system. Every source is read once and summarised on a page in my own words, with a link to the original. The largest part: clients. Each one has a page with context, history, tasks and promises. Finance pages live under a special regime: only on the computer, outside the online backup.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">journal/</span><span class="badge">journal</span>
+          <h3>What happened when</h3>
+          <p class="short">Dated records: write-ups, drafts, reports.</p>
+          <p class="more">The system’s timeline. Meeting write-ups, drafts of proposals and emails, one-off reports. The rule of layers: the wiki holds living knowledge with no date in the file name, the journal holds everything dated. A trace of the process does not belong among the knowledge.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">_system/</span><span class="badge">control</span>
+          <h3>Operating memory</h3>
+          <p class="short">Operations log, work queue, daily overview, catalogue.</p>
+          <p class="more">The log is a journal of what the agent has done. The <button class="term" data-plain="work queue" data-def="A list of “what should happen”: ideas, tasks and pending decisions, each with a date and context. Nothing from a conversation gets lost.">backlog</button> is the queue of what should happen. The dashboard is the home page with tasks. Thanks to them, the next session picks up exactly where the previous one ended.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">raw/processed/</span><span class="badge">sources</span>
+          <h3>Processed originals</h3>
+          <p class="short">The source materials the knowledge pages link to.</p>
+          <p class="more">A long text (a transcript, an article) is read in full only once, when it is processed. After that the work is done with the summary; the agent goes back to the original only on explicit request. It saves time and AI costs.</p>
+        </div>
+      </div>
+      <div class="core-side">
+        <div class="side-card"><b>Obsidian = a window</b><button class="term" data-plain="an app for reading and linking notes" data-def="A free app that displays a folder of text files as an interlinked knowledge network with search. It controls nothing; it just shows things nicely.">Obsidian</button> shows me the folder as an interlinked network: pages, links, search, a home page with tasks. If it disappeared, the data would remain.</div>
+        <div class="side-card"><b>Git + GitHub = the emergency brake</b><button class="term" data-plain="saving the history of all changes" data-def="A tool that remembers every version of every file. Whatever goes wrong can be undone. GitHub is its online backup, private in my case.">Git</button> saves every change, so there is always a way back; the backup goes to a private repository. Sensitive figures are not backed up online at all.</div>
+      </div>
+    </div>
+    <div class="conn">and the system learns as it goes ↓</div>
+  </section>
+
+  <section class="zone" id="zona-4">
+    <div class="zone-head"><span class="zn">4 · LOOPS</span><h2>How the system improves itself</h2></div>
+    <p class="sub">A second brain is not a project that gets finished one day. It is an organism: every mistake and every repetition moves it forward. We built it the way I teach clients to design services: understand first, then a small experiment, and only then scale.</p>
+    <div class="loop-panel">
+      <div class="cards">
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">lessons-learned.md</span>
+          <h3>Lessons learned</h3>
+          <p class="short">Every mistake is written down and becomes a rule.</p>
+          <p class="more">When I return an output with a comment, the agent first records the lesson (what was wrong, what rule follows from it) and only then fixes it. I don’t want to see the same mistake twice. Once a month the lessons are reviewed, and whatever has proved itself is promoted to the constitution or the procedures. In effect formative assessment, just for a system instead of students.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">ohio-kandidati.md</span>
+          <h3><button class="term" data-plain="“in one go”: turn repeated work into a procedure" data-def="Short for Only Handle It Once: touch each thing only once. Whatever repeats for the third time should become a written procedure.">OHIO</button>: the end of repetition</h3>
+          <p class="short">Third repetition of manual work → a proposal for a procedure.</p>
+          <p class="more">The agent watches which tasks I keep doing by hand. When it sees me doing a similar thing for the third time, it suggests: shall we build a procedure for this? That is how the procedure for proposals came about, for example. Bit by bit, routine turns into written know-how.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">backlog.md</span>
+          <h3>Ideas don’t get lost</h3>
+          <p class="short">Whatever comes up in conversation goes into the queue with a date and context.</p>
+          <p class="more">When an idea or task comes up in conversation and isn’t dealt with right away, the agent adds it to the queue itself. At the start of every session it reminds me of deadlines, blocking items and anything that has been sitting for more than two weeks.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">tasks × sent mail</span>
+          <h3>Done only with evidence</h3>
+          <p class="short">A task is ticked off only once it is visible that it happened.</p>
+          <p class="more">The task “send the proposal” is not ticked off on a feeling: the agent checks in the sent mail that the email really went out, and adds the date and a link to the tick. Sent proposals and follow-ups live on as “waiting for a reply”: after a week of silence a draft reminder is created, and after two weeks the item moves to my decisions.</p>
+        </div>
+        <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+          <span class="file">roadmap.md</span>
+          <h3>Phases of the build</h3>
+          <p class="short">From rules through a small pilot to automation.</p>
+          <p class="more">First rules and understanding (an inventory of all the data), then an experiment in one small area, then scaling topic by topic, and finally automation. The same approach as in designing any service: four phases that I teach as Discover, Define, Develop and Deliver.</p>
+        </div>
+      </div>
+      <p class="loop-note">↻ the loops return to zone 2: lessons change the constitution and the guardrails, repetition gives rise to new procedures</p>
+    </div>
+
+    <div class="gate">
+      <div class="ico">✋</div>
+      <p><b>The gate: a human approves.</b> Nothing goes out without me. The agent prepares, I decide: every email, every client write-up, every price. In the AI world this is called <button class="term" data-plain="a human has the last word" data-def="The “human in the loop” principle: AI may prepare and propose, but decisions that affect people are always made by a human.">human in the loop</button>; for me it is simply: a draft is a proposal, not an action.</p>
+    </div>
+    <div class="conn">only then does anything go out ↓</div>
+  </section>
+
+  <section class="zone" id="zona-5">
+    <div class="zone-head"><span class="zn">5 · OUTPUTS</span><h2>What comes out of the system</h2></div>
+    <p class="sub">The point of a second brain is not tidy notes. It is speed and reliability towards the people I work with.</p>
+    <div class="cards">
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">write-up → Google Doc</span><span class="badge gold">within 24 h</span>
+        <h3>Client write-up</h3>
+        <p class="short">A structured write-up of the meeting by the next day.</p>
+        <p class="more">Priority no. 1. A meeting turns into a write-up with decisions, an action plan and task owners; after my approval it goes out as a document to the client’s folder. The bottleneck is no longer my evening energy, only my approval.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">Gmail draft</span><span class="badge">I do the sending</span>
+        <h3>Prepared replies</h3>
+        <p class="short"><button class="term" data-plain="written but unsent emails" data-def="A draft message: prepared text waiting in the Drafts folder. It has not gone anywhere and will not, until a human sends it.">Drafts</button> of follow-ups and replies in the right thread.</p>
+        <p class="more">The agent creates the draft; I read, edit and send. The Send button is always mine. That way promises from meetings turn into sent emails, not into guilt.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">proposal → PDF</span><span class="badge">price after approval</span>
+        <h3>Proposals and documents</h3>
+        <p class="short">Content from the knowledge base, a document in my visual style.</p>
+        <p class="more">A proposal is built on the client’s page: context, an internal “take it / leave it” mirror, a suggested price (I decide), text in my voice. Final documents live on Drive; the system links to them.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">calendar [NÁVRH]</span><span class="badge">no guests</span>
+        <h3>Calendar proposals</h3>
+        <p class="short">Blocks of time to confirm, never invitations on my behalf.</p>
+        <p class="more">When an email implies “price this by Thursday”, the agent proposes a calendar block marked [NÁVRH]. I can confirm, move or delete it at a glance. The agent must never invite anyone else.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">dashboard</span><span class="badge auto">morning</span>
+        <h3>Daily overview</h3>
+        <p class="short">What is on today, what is pending, what others promised me.</p>
+        <p class="more">The home page: today’s schedule with context, overdue tasks, clients’ promises (those are tracked too), the decision queue. One view instead of five apps.</p>
+      </div>
+      <div class="card" role="button" tabindex="0"><span class="hint">+</span>
+        <span class="file">texts → my voice</span><span class="badge">together, not for me</span>
+        <h3>Articles and newsletter</h3>
+        <p class="short">We write longer texts together, block by block.</p>
+        <p class="more">The agent is the editor and the memory: it holds the topics, my exact wording and the writing process. The text is created in a joint session, block by block; my sentences must not be rewritten into a “better” version, and I always approve and send the final piece.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ RED LINES ============ -->
+<section class="redlines">
+  <div class="wrap">
+    <h2>Red lines: what the agent will never do</h2>
+    <p class="sub">The most important part of the whole system. Autonomy works only because it has clear boundaries.</p>
+    <div class="rl-grid">
+      <div class="rl"><b>It doesn’t send emails</b>Drafts only. Sending is always a human decision.</div>
+      <div class="rl"><b>It doesn’t speak for me in public</b>Whatever goes to clients or the public, I approve.</div>
+      <div class="rl"><b>It never deletes anything</b>Quarantine and a log entry instead of deletion. There is always a way back.</div>
+      <div class="rl"><b>Sensitive figures stay at home</b>Finances live only on the computer, outside online backups and outside outputs.</div>
+      <div class="rl"><b>It doesn’t make things up</b>When it doesn’t know a fact, it writes “fill in”. Better a gap than a fabrication.</div>
+      <div class="rl"><b>It doesn’t obey other people’s instructions</b>An instruction hidden in an incoming email is data, not a command.</div>
+      <div class="rl"><b>It doesn’t change the rules itself</b>It only proposes changes to the constitution and the guardrails; a human approves.</div>
+      <div class="rl"><b>When it isn’t sure, it asks</b>A short question is cheaper than a misfiled file.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GLOSSARY ============ -->
+<section class="gloss wrap" id="slovnicek">
+  <h2>A glossary without the jargon</h2>
+  <p class="sub">The same explanations that hide under the underlined words, in one place. I leave the terms in the text on purpose: in the AI world you will meet them at every step, and it is better to know them than to avoid them.</p>
+  <dl class="gl-grid">
+    <div class="gl"><dt>agent</dt><dd>A program with AI that carries out assigned tasks by itself, following written rules. Less a chat, more a workhorse.</dd></div>
+    <div class="gl"><dt>vault <span class="mono">“the safe”</span></dt><dd>One folder on a disk in which the whole second brain lives.</dd></div>
+    <div class="gl"><dt>markdown</dt><dd>Plain text with simple marks for headings and links. Anything can read it, today and in twenty years.</dd></div>
+    <div class="gl"><dt>Claude Code</dt><dd>A tool in which AI works directly with the files on a computer. You operate it by writing, in any language you like.</dd></div>
+    <div class="gl"><dt>skill <span class="mono">“procedure”</span></dt><dd>A file with instructions on how AI should do a specific type of work. Written once, used again and again.</dd></div>
+    <div class="gl"><dt>Obsidian</dt><dd>A free app that displays a folder of texts as an interlinked network of notes with search.</dd></div>
+    <div class="gl"><dt>Git and GitHub</dt><dd>A tool that remembers every version of every file, and its private online backup. Anything can be undone.</dd></div>
+    <div class="gl"><dt>wiki</dt><dd>Knowledge pages by topic, linked to one another. Summaries in my own words, not copies of sources.</dd></div>
+    <div class="gl"><dt>draft</dt><dd>A written but unsent message or document. It waits for human approval.</dd></div>
+    <div class="gl"><dt>allowlist</dt><dd>An approved list. Here: the people whose mail the agent may read.</dd></div>
+    <div class="gl"><dt>backlog <span class="mono">“work queue”</span></dt><dd>A list of “what should happen”: ideas and tasks with a date and context, so they don’t get lost.</dd></div>
+    <div class="gl"><dt>OHIO</dt><dd>Only Handle It Once: touch each thing only once. Whatever repeats for the third time should become a procedure.</dd></div>
+    <div class="gl"><dt>guardrails <span class="mono">“boundaries”</span></dt><dd>Rules about what AI must never do. They take precedence over any task.</dd></div>
+    <div class="gl"><dt>human in the loop</dt><dd>The principle: AI prepares and proposes, but decisions that affect people are always made by a human.</dd></div>
+    <div class="gl"><dt>scheduled task <span class="mono">“scheduled run”</span></dt><dd>A job that starts by itself at a set time. Here: the morning briefing, the evening processing, the Friday recap.</dd></div>
+    <div class="gl"><dt>service blueprint</dt><dd>A designer’s map of a service: what the customer sees and what runs backstage, step by step. That is exactly what this page is.</dd></div>
+  </dl>
+</section>
+
+<section class="wrap">
+  <div class="gate" style="border-color:#b8860b">
+    <div class="ico" style="background:#b8860b">☕</div>
+    <p><b style="color:#b8860b">Enjoying the map?</b> It was made in the evenings, just like the guides that go with it. If it helps you, you can <a href="https://buy.stripe.com/8x2fZj2sW2t453y9Gw0gw01">buy me a virtual coffee</a>.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="facts">
+      <span class="fact">for the curious:</span>
+      <span class="fact">5+ weeks in operation</span>
+      <span class="fact">270+ saved versions</span>
+      <span class="fact">95+ knowledge pages</span>
+      <span class="fact">24 written procedures</span>
+      <span class="fact">3 automatic runs daily/weekly</span>
+    </div>
+    <p class="claim">Tools change; a well-designed system stays.</p>
+    <p class="sig">svidrnochova.cz · map of the system as of September 2026 · <a href="../" hreflang="cs" style="color:inherit">česká verze</a></p>
+  </div>
+</footer>
+
+<button class="switch hidden" id="plainFab" aria-pressed="false"><span class="knob" aria-hidden="true"></span>Plain language</button>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+  // expanding cards (mouse and keyboard)
+  document.querySelectorAll('.card').forEach(c=>{
+    c.setAttribute('aria-expanded','false');
+    const toggle=e=>{
+      if(e.target.closest('.term'))return;
+      c.classList.toggle('open');
+      c.setAttribute('aria-expanded',c.classList.contains('open'));
+    };
+    c.addEventListener('click',toggle);
+    c.addEventListener('keydown',e=>{
+      if((e.key==='Enter'||e.key===' ')&&!e.target.closest('.term')){e.preventDefault();toggle(e);}
+    });
+  });
+
+  // glossary popovers
+  const pop=document.getElementById('pop');let popFor=null;
+  function hidePop(){pop.style.display='none';popFor=null;}
+  document.querySelectorAll('.term').forEach(t=>{
+    t.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(popFor===t){hidePop();return;}
+      pop.innerHTML='<b>'+t.textContent+'</b>'+t.dataset.def;
+      pop.style.display='block';
+      const r=t.getBoundingClientRect();
+      let x=r.left+window.scrollX-12, y=r.bottom+window.scrollY+10;
+      const maxX=window.scrollX+document.documentElement.clientWidth-pop.offsetWidth-12;
+      pop.style.left=Math.max(12,Math.min(x,maxX))+'px';
+      pop.style.top=y+'px';
+      popFor=t;
+    });
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('#pop'))hidePop();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')hidePop();});
+  window.addEventListener('scroll',hidePop,{passive:true});
+
+  // plain-language mode: switch in the text + floating button, shared state
+  const sw=document.getElementById('plainSwitch'),fab=document.getElementById('plainFab');
+  function setPlain(on){
+    document.body.classList.toggle('plain',on);
+    [sw,fab].forEach(b=>b.setAttribute('aria-pressed',on));
+  }
+  [sw,fab].forEach(b=>b.addEventListener('click',()=>setPlain(!document.body.classList.contains('plain'))));
+  // the floating button appears only once the top switch scrolls off screen
+  const bar=document.querySelector('.plainbar');
+  if('IntersectionObserver'in window){
+    new IntersectionObserver(es=>{fab.classList.toggle('hidden',es[0].isIntersecting)},{rootMargin:'0px'}).observe(bar);
+  }else{fab.classList.remove('hidden');}
+</script>
+</body>
